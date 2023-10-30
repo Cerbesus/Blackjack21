@@ -5,9 +5,17 @@ class Program
 {
     static void Main(string[] args)
     {
+        Console.WriteLine("+------------------------------------+");
+        Console.WriteLine("| +-----+ ------------------         |");
+        Console.WriteLine("| |A    | JUEGO: Blackjack 21        |");
+        Console.WriteLine("| |  ♠  | LENGUAJE: C#               |");
+        Console.WriteLine("| |    A| AUTOR: Brian Giraldo       |");
+        Console.WriteLine("| +-----+ ------------------         |");
+        Console.WriteLine("|         PROGRAMACIÓN Y MOTORES     |");
+        Console.WriteLine("+------------------------------------+");
         Console.Write("Ingresa tu nombre: ");
         string playerName = Console.ReadLine();
-
+        Console.Clear();
         BlackjackGame game = new BlackjackGame(playerName);
         game.PlayGame();
     }
@@ -55,7 +63,7 @@ public class Deck
 
     public void Shuffle() //Método que mezcla la baraja
     {
-        int n = cards.Count; 
+        int n = cards.Count;
         while (n > 1)
         {
             n--;
@@ -139,6 +147,89 @@ public class BlackjackPlayer : Player
     {
         return CalculateScore() > 21;
     }
+
+    public void DrawHandHorizontally()
+    {
+        foreach (Card card in Hand)
+        {
+            Console.Write("+-----+");
+        }
+        Console.WriteLine(); // Nueva línea para las cartas siguientes
+
+        foreach (Card card in Hand)
+        {
+            Console.Write($"|{GetCardValueAsString(card),-4} |");
+            //{GetCardValueAsString(card),-4}: Esta parte es un especificador de formato que controla
+            //cómo se alinea la cadena dentro de un espacio de ancho fijo.
+            //El número -4 indica que la cadena se ajustará a una longitud
+            //de 4 caracteres y se alineará a la izquierda dentro de ese espacio.
+            //Si la cadena tiene menos de 4 caracteres, se llenará con espacios en blanco
+            //a la derecha para cumplir con la longitud de 4 caracteres.
+        }
+        Console.WriteLine(); // Nueva línea para las cartas siguientes
+
+        foreach (Card card in Hand)
+        {
+            Console.Write("|  ");
+            Console.Write($"{GetCardSuitSymbol(card.Suit)}");
+            Console.Write("  |");
+        }
+        Console.WriteLine(); // Nueva línea para las cartas siguientes
+
+        foreach (Card card in Hand)
+        {
+            Console.Write($"|   {GetCardValueAsString(card),-2}|");
+        }
+        Console.WriteLine(); // Nueva línea para las cartas siguientes
+
+        foreach (Card card in Hand)
+        {
+            Console.Write("+-----+");
+        }
+        Console.WriteLine(); // Nueva línea al final
+    }
+
+    public string GetCardSuitSymbol(Suit suit)
+    {
+        switch (suit)
+        {
+            case Suit.Hearts:
+                return "♥";
+            case Suit.Diamonds:
+                return "♦";
+            case Suit.Clubs:
+                return "♣";
+            case Suit.Spades:
+                return "♠";
+            default:
+                return "";
+        }
+    }
+
+    public string GetCardValueAsString(Card card)
+    {
+        if (card.Value >= 2 && card.Value <= 10)
+        {
+            return card.Value.ToString();
+        }
+        else
+        {
+            switch (card.Value)
+            {
+                case 1:
+                    return "A";
+                case 11:
+                    return "J";
+                case 12:
+                    return "Q";
+                case 13:
+                    return "K";
+                default:
+                    return ""; // Manejar otros valores si es necesario
+            }
+        }
+    }
+
 }
 
 public class BlackjackDealer : BlackjackPlayer
@@ -152,6 +243,22 @@ public class BlackjackDealer : BlackjackPlayer
             DrawCard(deck);
         }
     }
+
+    public void DrawHandUnkown()
+    {
+        // Dibujar la primera carta normalmente junto a la segunda
+        Console.Write("+-----++-----+");
+        Console.WriteLine();
+        Console.Write($"|{GetCardValueAsString(Hand[0]),-4} ||     |");
+        Console.WriteLine();
+        Console.Write($"|  {GetCardSuitSymbol(Hand[0].Suit),-2} ||  ?  |");
+        Console.WriteLine();
+        Console.Write($"|   {GetCardValueAsString(Hand[0]),-2}||     |");
+        Console.WriteLine();
+        Console.Write("+-----++-----+");
+        Console.WriteLine();
+    }
+
 }
 
 public class BlackjackGame
@@ -215,13 +322,19 @@ public class BlackjackGame
         player.DrawCard(deck);
         dealer.DrawCard(deck);
 
-        Console.WriteLine("¡Bienvenido al Blackjack!");
         while (true)
         {
-            Console.WriteLine("\nTus cartas:");
-            player.ShowHand();
-            Console.WriteLine($"Puntuación: {player.CalculateScore()}");
-            PrintGameStatus();
+            Cabecera();
+            Console.WriteLine("-----------------");
+            Console.WriteLine("MANO DEL CROUPIER:");
+            Console.WriteLine("-----------------");
+            dealer.DrawHandUnkown();
+            Console.WriteLine();
+            Console.WriteLine("-----------------");
+            Console.WriteLine($"MANO DE {player.Name}:");
+            Console.WriteLine("-----------------");
+            player.DrawHandHorizontally();
+            Console.WriteLine("-----------------");
 
             if (player.IsBusted())
             {
@@ -229,7 +342,7 @@ public class BlackjackGame
                 return;
             }
 
-            Console.Write("\n¿Quieres otra carta? (s/n): ");
+            Console.Write("¿Quieres otra carta? (s/n): ");
             string response = Console.ReadLine();
 
             if (response.ToLower() == "s")
@@ -238,23 +351,46 @@ public class BlackjackGame
             }
             else if (response.ToLower() == "n")
             {
-                break;
+                dealer.PlayAsDealer(deck);
+
+                if (player.IsBusted() || dealer.IsBusted())
+                {
+                    Console.Clear();
+                    break;
+                }
             }
             else
             {
                 Console.WriteLine("Respuesta inválida. Por favor, ingrese 's' para sí y 'n' para no.");
             }
+            Console.Clear();
         }
 
         // El crupier juega automáticamente
-        dealer.PlayAsDealer(deck);
+        Cabecera();
+        Console.WriteLine("-----------------");
+        Console.WriteLine("MANO DEL CROUPIER:");
+        Console.WriteLine("-----------------");
+        dealer.DrawHandHorizontally();
+        Console.WriteLine("-----------------");
+        Console.WriteLine($"MANO DE {player.Name}:");
+        Console.WriteLine("-----------------");
+        player.DrawHandHorizontally();
+        Console.WriteLine("-----------------");
+        Console.WriteLine($"Puntuación del croupier: {dealer.CalculateScore()}");
+        Console.WriteLine($"Puntuación de {player.Name}: {dealer.CalculateScore()}");
+        Console.WriteLine($"\n{DetermineWinner()}");
+    }
 
-        Console.WriteLine("\nCartas del crupier:");
-        dealer.ShowHand();
-        Console.WriteLine($"Puntuación del crupier: {dealer.CalculateScore()}");
-
-        Console.WriteLine(DetermineWinner());
+    public void Cabecera()
+    {
+        Console.WriteLine("+------------------------------------+");
+        Console.WriteLine("| +-----+ ------------------         |");
+        Console.WriteLine("| |A    | JUEGO: Blackjack 21        |");
+        Console.WriteLine("| |  ♠  | LENGUAJE: C#               |");
+        Console.WriteLine("| |    A| AUTOR: Brian Giraldo       |");
+        Console.WriteLine("| +-----+ ------------------         |");
+        Console.WriteLine("|         PROGRAMACIÓN Y MOTORES     |");
+        Console.WriteLine("+------------------------------------+");
     }
 }
-
-
